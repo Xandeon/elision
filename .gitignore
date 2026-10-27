@@ -1,0 +1,110 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Build / Distribution
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+
+# =========================
+# Virtual Environments
+# =========================
+.venv/
+venv/
+env/
+ENV/
+
+# Environment Variables / Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# =========================
+# IDE / Editors
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# =========================
+# Testing / Coverage
+# =========================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+test-results/
+
+# =========================
+# Type Checking / Linting
+# =========================
+.mypy_cache/
+.pyright/
+.ruff_cache/
+.dmypy.json
+.pyre/
+
+# =========================
+# Jupyter Notebooks
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# Machine Learning
+# =========================
+
+# Model checkpoints / weights
+checkpoints/
+models/checkpoints/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+
+# Experiment tracking
+runs/
+wandb/
+mlruns/
+lightning_logs/
+tensorboard/
+
+# =========================
+# Datasets / Generated Data
+# =========================
+data/raw/
+data/processed/
+data/generated/
+datasets/
+*.npy
+*.npz
+
+# =========================
+# Temporary Files
+# =========================
+tmp/
+temp/
+*.tmp
+*.log
+.DS_Store
+
+# =========================
+# Elision Outputs
+# =========================
+outputs/
+artifacts/
+benchmarks/results/
