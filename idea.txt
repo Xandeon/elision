@@ -1,0 +1,65 @@
+New idea stemming from this: What if we have a "lossy" reversible algorithm that converts values 2^N -> 2^N-1, or 2^N - x that is x smaller than the original. call the 2^N set Q and the 2^N-x set P. we have some function that takes an address or number or value y in representation P to one of multiple representations in Q, but the encoder and decoder know what happened:
+
+encoder:
+
+takes data in representation Q and chunks it up into 16 uniquely identifiable chunks (This is important, no 2 chunks can be identical in the Q representation that are present in the list of chunks, so if its integers 4055 and 4055 could not be allowed to be in the same list of chunks for the algorithm to work). Then it runs these through the algorithm Q -> P. it results in 9 chunks or whatever in representation P with duplicates.
+
+so you have like chunks Q[1, 2,  ... 15, 16] -> P[1, 2, ... 3_8, 4_9] < where the duplicates in P are prefixed. because the encoder took the time to carefully ensure that no chunks in Q are duplicate information the decoder can take advantage of that fact.
+
+Decoder:
+
+The mapping was something like 4 -> 1 in Q -> P and the reversible alrogrithm is uniformely probablistic to generate 1/4 outputs from 1->4 P -> Q. the decoder is smart enough to know from the encoding P[1, 2, ... 3_8, 4_9] hey I am supposed to see 3 separate reperentations of 8 and 4 representations of 9 in the Q output. so for 9 I just run until i get all 4 versions, and for 8 I run until i get 3/4 and have some probabilty of the 3 versions being right.  
+
+say chunk 13, 14, 15, 16 all get mapped to 4_9, the ordering of the data is lost. unless we add some sort of ordering metadata inside of the chunk it self so like a checksum for the whole list, so 13 is actaully 13' with the ordering. the metadata lives in the representation that goes through the compression so it doesn't end up on the other half. 
+
+So the decoder has the burden of doing multiple runs but selectively until it gets the probability right, and things like checksum could be done in parallel since checksum is a massivelly lossy compression technicall and is also non reversible it could be metadata that crosses the boundary. This is all veery algorithmic and I think I know where it falls apart. in a very large number or even reasonable computer values: Doing like 2^32 -> 2^30 so like a 4 -> 1 mapping (some rule has to exist to do this) you still have the problem of having 2^32 possible numbers, even after mutation if your sequence is only 16 numbers in Q (2^32) the resulting list is also so large that you probably don't get that lucky and the list in P (2^30) is just 16 chunks long, and now you have no compression and an annoying probability guess and check sequence to run through, so the mapping would have to be significantly more aggressive like 16 -> 1 or 24 -> 1, but then the burden is on the computation (and that might be where it falls apart).
+
+the key is that there are independant resources that can all have constraints known by both parties so that less information is transmitted, and instead "stored in ambiguity"
+
+
+Imagine we have 12 bit chunks and let k=16 (number of chunks), and then combine the 12 bit arbitrary data with 16 4 bit order values, such that the 4 bit value lives in the 4 msb of a new 16 bit number. So the hit is obviously that 64 bits are utilized on top of 192 to order it, but this also gaurantees a uniqueness restraint and reduces ambiguity. what is the tradeoff. the the mapping funciton takes N = 16 with a 4 -> 1 8 -> 1 or whatever. Basically a general N (of N-Bit universe) would be given N = # of ordering bits + # of data bits. if it is indeed in bits then k moves in 2^n quantites, so 32 chunks would have 5 ordering bits. and keeping with 12 bit data the N = 17, so the univers of total numbers for Q is 2^17 and a 4->1 mapping would map down to 2^ 15 and 8->1 mapping would move to  2^13. so guaranteed uniqueness, guaranteed order encoding, likelehood of collision is lowered, and uniquenss constraint is dropped. Does this eat any gains? 
+
+
+f(q) = floor(q/2^r)  
+
+...
+
+okay i think i see the writing on the wall though, information theory will not let me pack any information into constraints or other wise that would let me universally defeat 2^N -> 2^N-1 rule that we keep coming back to, so  this algorithm has to be okay with producing multiple answers, trading compression loss for ambiguity of 2 or more lossless possible answers. So at this point, especially for my case, not pure math, engineering this is where a tradeoff is decided, how much ambiguity makes this untenable and useless, and how much can be recovered. for instance the decoder doesnt have to alone figure it out. imagine you compressed computer code, the and the decoder gives back 16 possible returned values, and the receiver is okay with this. now outside of the compression system entirely, we just try to compile that code. how often does it produce runnable code from more than 2 ambiguous outputs from the decoder? probably every now and then, but at scale that sort of thing is addressable, espescilly if the  desired compressed data is code that you can store an input-expected output pair with. With the true ambiguous trade off, you likely end up spending less on storing an input/output pair in metadata than you gain by a meaninful version of this algorithm.
+
+
+we get:
+
+original data -> compact representation
+
+compact representation -> a set that contains data and a bunch of crap
+
+the set -> validator -> original data
+
+and for stuctured human data like code or writing this is easy. code especially, because a compiler, type systems, syntax and grammar, existing interfaces or dependices in a larger project, input/outputs all would resolve the output ambiguity.
+
+
+So from an engineering standpoint there is something to this. from a universal standpoint it will never work globally and losslessly without introducing some sort of tradeoff. here is ambiguity. 
+
+
+
+Ambiguity-tolerant compression with external constraint-guided reconstruction.
+
+
+
+I also just realized where uniqueness and collisions applies:
+
+say the output for records in P produces:
+
+record A: p[1, 2, 3, 3, 3, 5, 6 ... random ...]
+record B: p[1, 2, 3, 3, 3, 5, 6 ... random ...]
+record C: p[1, 2, 3, 3, 3, 5, 6 ... random ...]
+record D: p[1, 2, 3, 3, 3, 5, 6 ... random ...]
+record E: p[1, 2, 3, 3, 3, 5, 6 ... random ...]
+
+just for this purpose assume this isnot structural, what is important is that there is 3_3 (just how i think of a colission). after going from the 8 bit absoulte to the 6 bit ambigous records, we take the entire artifact and apply huffman encoding or some other method, taking the hit on small metadata, but now actually feeling the collision benefit by further compacting the output using the hardened method.
+
+
+Q ---> P ---> C 
+   many to 1 and then huffman
+C ---> P ---> Q'
+   huffman then constrained reconstruction
